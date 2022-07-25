@@ -13,7 +13,7 @@ const { AppConfig } = require('aws-sdk');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use( multer().any())
 
-mongoose.connect("mongodb+srv://snehal_3497:snehal_3497@atlascluster.q9xoryr.mongodb.net/group78Database?retryWrites=true&w=majority", {
+mongoose.connect("mongodb+srv://snehal_3497:snehal_3497@atlascluster.q9xoryr.mongodb.net/group09Database?retryWrites=true&w=majority", {
     useNewUrlParser: true
 })
 .then( () => console.log("MongoDb is connected"))

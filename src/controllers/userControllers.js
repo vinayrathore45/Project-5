@@ -17,7 +17,7 @@ const isValid1 = function (value) {
 };
 const createUser = async function(req,res){
     try{
-    const { fname,lname,email, profileImage, phone,password, address} = req.body
+    const { fname,lname,email,phone,password, address} = req.body
     if (Object.keys(req.body).length == 0) return res.status(400).send({ status: false, message: "please enter details" })
 
     if (!isValid(fname)) return res.status(400).send({ status: false, message: "please enter fname" })
@@ -25,18 +25,25 @@ const createUser = async function(req,res){
     if (!isValid(lname)) return res.status(400).send({ status: false, message: "please enter lname" })
 
     if (!isValid(email)) return res.status(400).send({ status: false, message: "please enter email" })
+    if(!/[a-z0-9]+@[a-z]+\.[a-z]{2,3}/.test(email)) return res.status(400).send({ status: false, message: "please enter valid email" })
     const usedEmail = await userModel.findOne({email:email})
     if(usedEmail) return res.status(409).send({ status: false, message: "emailId is already used" })
 
 //===================================Imagefile validation==========================//
-    const files = req.files[0];
-    if(!files) return res.status(400).send({ status: false, message: "please enter profileImage" })
-    const  fileType = files['type'];
+    const files = req.files;
+    console.log(files)
+    if(!files && files.length>0) return res.status(400).send({ status: false, message: "please enter profileImage" })
+    const myFile = files[0]
+    console.log(myFile)
+    const  fileType = myFile['mimetype'];
+    console.log(fileType)
     const validImageTypes = ['image/gif', 'image/jpeg', 'image/png'];
     if (!validImageTypes.includes(fileType)) return res.status(400).send({ status: false, message: "Please enter valid image file" })
          //********uploading image to aws*******/
-    const uploadImage  = await file.uploadFile(files)
+    const uploadImage  = await file.uploadFile(myFile)
+    console.log(uploadImage)
     req.body.profileImage = uploadImage;
+    
 //==================================phone validations============================//
     if (!isValid(phone)) return res.status(400).send({ status: false, message: "please enter phone number" })
     if (!/^[0-9]{10}$/.test(phone)) return res.status(400).send({ status: false, message: "please enter valid phone number" })
