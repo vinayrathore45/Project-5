@@ -64,7 +64,7 @@ const createUser = async function(req,res){
       
       //******billing validation**************//
       const billing = address.billing
-      if(Object.keys(billing).length != 3)return res.status(400).send({ status: false, message: "Some shipping details is missing" })
+      if(Object.keys(billing).length != 3)return res.status(400).send({ status: false, message: "Some billing details is missing" })
       const {street1 , city1 , pincode1} = billing
       if (!isValid(street1)) return res.status(400).send({ status: false, message: "please enter street details" });
       if (!isValid(city1)) return res.status(400).send({ status: false, message: "please enter city" });
