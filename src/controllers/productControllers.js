@@ -14,7 +14,7 @@ const createProduct = async function(req,res){
     const { title ,description , price ,isFreeShipping ,style,availableSizes,installments } = req.body
 
     if (!isValid(title)) return res.status(400).send({ status: false, message: "please enter title" })
-    const usedTitle = await productModel.findOne({email:email})
+    const usedTitle = await productModel.findOne({title:title})
     if(usedTitle) return res.status(409).send({ status: false, message: "Title is already used" })
 
     if(!isValid(description))return res.status(400).send({ status: false, message: "please enter description" })
