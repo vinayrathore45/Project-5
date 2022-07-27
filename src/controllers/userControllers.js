@@ -2,18 +2,19 @@ const userModel = require("../models/userModel.js");
 const file = require("../controllers/aws.js");
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose')
+const jwt= require('jsonwebtoken')
 const ObjectId = mongoose.Schema.Types.ObjectId
 
 
-function isValidObjectId(id) {
+// function isValidObjectId(id) {
 
-    if (ObjectId.isValid(id)) {
-        if ((String)(new ObjectId(id)) === id)
-            return true;
-        return false
-    }
-    return false
-}
+//     if (ObjectId.isValid(id)) {
+//         if ((String)(new ObjectId(id)) === id)
+//             return true;
+//         return false
+//     }
+//     return false
+// }
 
 
 const isValid = function (value) {
@@ -22,12 +23,12 @@ const isValid = function (value) {
     if (typeof value != "string") return false;
     return true;
 };
-const isValid1 = function (value) {
-    if (typeof value === "undefined" || value === null) return false;
-    if (typeof value === "string" && value.trim().length === 0) return false;
-    if (typeof value != "number") return false;
-    return true;
-};
+// const isValid1 = function (value) {
+//     if (typeof value === "undefined" || value === null) return false;
+//     if (typeof value === "string" && value.trim().length === 0) return false;
+//     if (typeof value != "number") return false;
+//     return true;
+// };
 const createUser = async function (req, res) {
     try {
         const { fname, lname, email, phone,  address } = req.body
@@ -49,16 +50,16 @@ const createUser = async function (req, res) {
         if (!files && files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })
         const myFile = files[0]
         const fileType = myFile['mimetype'];
-        const validImageTypes = ['image/gif', 'image/jpeg', 'image/png'];
+        const validImageTypes = ['image/gif', 'image/jpeg', 'image/png' ,'image/jpg' ];
         if (!validImageTypes.includes(fileType)) return res.status(400).send({ status: false, message: "Please enter valid image file" })
         //********uploading image to aws*******/
         const uploadImage = await file.uploadFile(myFile)
-        console.log(uploadImage)
+
         req.body.profileImage = uploadImage;
 
         //==================================phone validations============================//
         if (!isValid(phone)) return res.status(400).send({ status: false, message: "please enter phone number" })
-        if (!/^[0-9]{10}$/.test(phone)) return res.status(400).send({ status: false, message: "please enter valid phone number" })
+        if (!/^([9876]{1})(\d{1})(\d{8})$/.test(phone)) return res.status(400).send({ status: false, message: "please enter valid phone number" })
         const usedNumber = await userModel.findOne({ phone: phone })
         if (usedNumber) return res.status(409).send({ status: false, message: " Phone number is already exist" })
         //===========================password validation===================================//
@@ -72,30 +73,32 @@ const createUser = async function (req, res) {
     //    // });
        const bcryptPassword = await bcrypt.hash(password, 10)
        req.body.password = bcryptPassword
-       console.log(password)
+    //    console.log(password)
 
 
         //============================address validations================================//
         const myAddress = JSON.parse(address)
+        console.log(myAddress)
         if (Object.keys(myAddress).length != 2) return res.status(400).send({ status: false, message: "Shipping or billing address is missing" })
         //******shipping validation**************//
         const shipping = myAddress.shipping
         if (Object.keys(shipping).length != 3) return res.status(400).send({ status: false, message: "Some shipping details is missing" })
         const { street, city, pincode } = shipping
-        if (!isValid(street)) return res.status(400).send({ status: false, message: "please enter street details" });
-        if (!isValid(city)) return res.status(400).send({ status: false, message: "please enter city" });
-        if (!isValid1(pincode)) return res.status(400).send({ status: false, message: "please enter phone number" });
-         if (!/^[1-9]{1}[0-9]{2}\\s{0, 1}[0-9]{3}$/.test(pincode)) return res.status(400).send({ status: false, message: "please enter valid pincode" })
+        
+        if (!isValid(street)) return res.status(400).send({ status: false, message: "please enter shipping street details" });
+        if (!isValid(city)) return res.status(400).send({ status: false, message: "please enter shipping city" });
+        if (typeof(pincode)!="number") return res.status(400).send({ status: false, message: "please enter shipping pincode" });
+        if (!/^[1-9][0-9]{5}$/.test(pincode)) return res.status(400).send({ status: false, message: "please enter valid shippig pincode" })
 
         //******billing validation**************//
         const billing = myAddress.billing
         if (Object.keys(billing).length != 3) return res.status(400).send({ status: false, message: "Some billing details is missing" })
-        const { street1, city1, pincode1 } = billing
-        if (!isValid(street1)) return res.status(400).send({ status: false, message: "please enter street details" });
-        if (!isValid(city1)) return res.status(400).send({ status: false, message: "please enter city" });
-        if (!isValid1(pincode1)) return res.status(400).send({ status: false, message: "please enter phone number" });
-         if (!/^[1-9]{1}[0-9]{2}\\s{0, 1}[0-9]{3}$/.test(pincode1)) return res.status(400).send({ status: false, message: "please enter valid pincode" })
-       req.body.address = myAddress
+        if (!isValid(billing.street)) return res.status(400).send({ status: false, message: "please enter billing street details" });
+        if (!isValid(billing.city)) return res.status(400).send({ status: false, message: "please enter billing city" });
+        if (typeof(billing.pincode)!= "number") return res.status(400).send({ status: false, message: "please enter billing pincode" });
+         if (!/^[1-9][0-9]{5}$/.test(billing.pincode)) return res.status(400).send({ status: false, message: "please enter valid billing pincode" })
+      
+         req.body.address = myAddress
 
         let user = await userModel.create(req.body)
         return res.status(201).send({ status: true, message: "User created successfully", data: user })
@@ -104,44 +107,51 @@ const createUser = async function (req, res) {
     }
 }
 const userLogin = async function (req, res) {
+    try{
     let { email, password } = req.body;
-
+    
     if (!isValid(email) || !isValid(password))
-        return res.status(400).send({ status: false, msg: "Provide emailId and Password both" });
+    return res.status(400).send({ status: false, msg: "Provide emailId and Password both" });
 
-    let user = await userModel.findOne({ email: email, password: password });
+    let myUser = await userModel.findOne({ email: email});
+    if(!myUser)return res.status(400).send({ status: false, msg: "emailId is not present in db" });
+    
+    bcrypt.compare(password, myUser.password ,function(err, result) {
+       if (result) {
+        let token = jwt.sign({
+            userId: myUser._id.toString()
+        }, "group09",
+            {
+                expiresIn: "1h"
+            });
+    
+        return res.status(200).send({ status: true, msg: "success", userId: myUser._id, token: token })
+        
+       } 
+       return res.status(400).send({status: false , message:"wrong password"})
 
-    if (!user) {
-        return res.status(400).send({ status: false, msg: "EmailId or Password is Wrong" })
-    }
-
-    let token = jwt.sign({
-        userId: user._id.toString()
-    }, "functionup-radon",
-        {
-            expiresIn: "1h"
-        });
-
-    res.status(200).send({ status: true, msg: "success", userId: user._id, token: token })
+     });
+    } catch (err) {
+        return res.status(500).send({ status: false, message: err.message })
+    }}
 
 
-}
 const getUser = async function (req, res) {
     try {
         const userId = req.params.userId;
-        if (!isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid id format" })
+        if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid id format" })
 
         const user = await userModel.findOne({ _id: userId });
 
         return res.status(200).send({ status: true, message: "User profile details", data: user });
     } catch (error) {
-        console.log({ status: false, message: error.message });
+        // console.log({ status: false, message: error.message });
         return res.status(500).send({ status: false, message: error.message });
     }
 };
 
 const updatedUser = async function (req, res) {
-    try {
+
         let userId = req.params.userId
         let data = req.body
         let { fname, lname, email, phone, password, address } = req.body
@@ -183,7 +193,7 @@ const updatedUser = async function (req, res) {
         //check the phone unique or not 
         if (phone != null) {
             if (!isValid(phone)) return res.status(400).send({ status: false, message: "please enter phone number" })
-            if (!/^(?:(?:\+|0{0,2})91(\s*[\-]\s*)?|[0]?)?[789]\d{9}$/.test(phone)) return res.status(400).send({ status: false, message: "please enter valid phone number" })
+            if (!/^([9876]{1})(\d{1})(\d{8})$/.test(phone)) return res.status(400).send({ status: false, message: "please enter valid phone number" })
             let findPhone = await userModel.findOne({ phone: phone })
             if (findPhone) return res.status(400).send({ status: false, msg: "phone is Already Present in DB" })
         }
@@ -191,27 +201,41 @@ const updatedUser = async function (req, res) {
 
 
         // useing adreess validation
-        if (address != null) {
-            if (Object.keys(address).length != 2) return res.status(400).send({ status: false, message: "Shipping or billing address is missing" })
-            //******shipping validation**************//
-            const shipping = address.shipping
-            if (Object.keys(shipping).length != 3) return res.status(400).send({ status: false, message: "Some shipping details is missing" })
-            const { street, city, pincode } = shipping
-            if (!isValid(street)) return res.status(400).send({ status: false, message: "please enter street details" });
-            if (!isValid(city)) return res.status(400).send({ status: false, message: "please enter city" });
-            if (!isValid1(pincode)) return res.status(400).send({ status: false, message: "please enter phone number" });
-            if (!/^[1-9]{1}[0-9]{2}\\s{0, 1}[0-9]{3}$/.test(pincode)) return res.status(400).send({ status: false, message: "please enter valid pincode" })
-
-            //******billing validation**************//
-            const billing = address.billing
-            if (Object.keys(billing).length != 3) return res.status(400).send({ status: false, message: "Some billing details is missing" })
-            const { street1, city1, pincode1 } = billing
-            if (!isValid(street1)) return res.status(400).send({ status: false, message: "please enter street details" });
-            if (!isValid(city1)) return res.status(400).send({ status: false, message: "please enter city" });
-            if (!isValid1(pincode1)) return res.status(400).send({ status: false, message: "please enter phone number" });
-            if (!/^[1-9]{1}[0-9]{2}\\s{0, 1}[0-9]{3}$/.test(pincode1)) return res.status(400).send({ status: false, message: "please enter valid pincode" })
+        if(address != null){
+        const myAddress = JSON.parse(address)
+        // if (Object.keys(myAddress).length != 2) return res.status(400).send({ status: false, message: "Shipping or billing address is missing" })
+        //******shipping validation**************//
+        if(myAddress.shipping != null){
+        const shipping = myAddress.shipping
+        // if (Object.keys(shipping).length != 3) return res.status(400).send({ status: false, message: "Some shipping details is missing" })
+        const { street, city, pincode } = shipping
+        if(street != null){
+            if (!isValid(street)) return res.status(400).send({ status: false, message: "please enter shipping street details" });
         }
-
+        if(city != null){
+            if (!isValid(city)) return res.status(400).send({ status: false, message: "please enter shipping city" });
+        }
+         if(pincode != null){
+        if (typeof(pincode)!="number") return res.status(400).send({ status: false, message: "please enter shipping pincode" });
+        if (!/^[1-9][0-9]{5}$/.test(pincode)) return res.status(400).send({ status: false, message: "please enter valid shippig pincode" })
+        }
+        //******billing validation**************//
+        if(billing != null){
+        const billing = myAddress.billing
+       
+        // if (Object.keys(billing).length != 3) return res.status(400).send({ status: false, message: "Some billing details is missing" })
+        if(billing.address != null){
+            if (!isValid(billing.street)) return res.status(400).send({ status: false, message: "please enter billing street details" });
+        }
+        if(billing.city != null){
+            if (!isValid(billing.city)) return res.status(400).send({ status: false, message: "please enter billing city" });
+        }
+        if(billing.pincode != null){
+        if (typeof(billing.pincode)!= "number") return res.status(400).send({ status: false, message: "please enter billing pincode" });
+         if (!/^[1-9][0-9]{5}$/.test(billing.pincode)) return res.status(400).send({ status: false, message: "please enter valid billing pincode" })
+        }
+         req.body.address = myAddress
+        }
         // image validation
         if (req.files.length > 0) {
             const files = req.files;
@@ -226,6 +250,7 @@ const updatedUser = async function (req, res) {
             req.body.profileImage = uploadImage;
         }
         //check if password is valid or not ?
+        if(password != null){
         var passwordReg = /^(?=.[a-z])(?=.[A-Z])(?=.\d)(?=.[@$!%?&])[A-Za-z\d@$!%?&]{8,15}$/;
         if (!passwordReg.test(password)) {
             return res.status(400).send({ status: false, msg: "pass is invalid(Minimum 8 and maximum 15 characters, at least one uppercase letter, one lowercase letter, one number and one special character Ex. Abc@123,abC%98,@abD34,1999$Sour" })
@@ -233,17 +258,18 @@ const updatedUser = async function (req, res) {
         const bcryptPassword = await bcrypt.hash(password, 10)
         req.body.password = bcryptPassword
 
-
+    }
 
         //if all condition are passed update data
         let updatedUser = await userModel.findByIdAndUpdate(userId, data, { new: true })
 
         return res.status(200).send({ status: true, data: updatedUser });
-    } catch (err) {
-        return res.status(500).send({ status: false, message: err.message })
-    }
-
 }
+// }catch (err) {
+//         return res.status(500).send({ status: false, message: err.message })
+//     }
+
+// }
 
 
 

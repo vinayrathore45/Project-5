@@ -14,7 +14,7 @@ const auth= async (req,res,next) =>{
     let bearer = bearerToken.split(' ')
     let token = bearer[1];
 
-     jwt.verify(token, "group16" , function(err , data){
+     jwt.verify(token, "group09" , function(err , data){
         if(err) return res.status(401).send({ status: false, message: "Incorrect Token" })
         req.body.userId = data
      });
