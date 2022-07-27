@@ -77,7 +77,11 @@ const createUser = async function (req, res) {
 
 
         //============================address validations================================//
-        const myAddress = JSON.parse(address)
+        try{
+            var myAddress = JSON.parse(address)
+        }catch(err){
+            return res.status(400).send({status: false , message:"no entry should not start with 0"})
+        }
         console.log(myAddress)
         if (Object.keys(myAddress).length != 2) return res.status(400).send({ status: false, message: "Shipping or billing address is missing" })
         //******shipping validation**************//
@@ -235,7 +239,7 @@ const updatedUser = async function (req, res) {
          if (!/^[1-9][0-9]{5}$/.test(billing.pincode)) return res.status(400).send({ status: false, message: "please enter valid billing pincode" })
         }
          req.body.address = myAddress
-        }
+        }}
         // image validation
         if (req.files.length > 0) {
             const files = req.files;
@@ -264,7 +268,7 @@ const updatedUser = async function (req, res) {
         let updatedUser = await userModel.findByIdAndUpdate(userId, data, { new: true })
 
         return res.status(200).send({ status: true, data: updatedUser });
-}
+}}
 // }catch (err) {
 //         return res.status(500).send({ status: false, message: err.message })
 //     }
