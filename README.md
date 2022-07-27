@@ -189,6 +189,7 @@ On success - Return HTTP status 201. Also return the product document. The respo
 On error - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like this
 GET /products
 Returns all products in the collection that aren't deleted.
+
 Filters
 Size (The key for this filter will be 'size')
 Product name (The key for this filter will be 'name'). You should return all the products with name containing the substring recieved in this filter
