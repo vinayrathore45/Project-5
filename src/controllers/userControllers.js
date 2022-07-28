@@ -18,7 +18,9 @@ const isValid = function (value) {
 
 const createUser = async function (req, res) {
     try {
-        const { fname, lname, email, phone,  address } = req.body
+         let data = JSON.parse(req.body.data)
+           
+        const { fname, lname, email, phone, password} = data
         if (Object.keys(req.body).length == 0) return res.status(400).send({ status: false, message: "please enter details" })
 
         if (!isValid(fname)) return res.status(400).send({ status: false, message: "please enter fname" })
@@ -42,7 +44,7 @@ const createUser = async function (req, res) {
         //********uploading image to aws*******/
         const uploadImage = await file.uploadFile(myFile)
 
-        req.body.profileImage = uploadImage;
+        data.profileImage = uploadImage;
 
         //==================================phone validations============================//
         if (!isValid(phone)) return res.status(400).send({ status: false, message: "please enter phone number" })
@@ -50,7 +52,7 @@ const createUser = async function (req, res) {
         const usedNumber = await userModel.findOne({ phone: phone })
         if (usedNumber) return res.status(409).send({ status: false, message: " Phone number is already exist" })
         //===========================password validation===================================//
-        let password = req.body.password
+        // let password = req.body.password
         if (!isValid(password)) return res.status(400).send({ status: false, message: "please enter password" })
         if (!/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,15}$/.test(password)) return res.status(400).send({ status: false, message: "Please enter strong password of atleast 8 character, It should contain atleast One Capital letter , one lower case letter and special character ," })
         //******password hashing and salting **********/
@@ -59,17 +61,17 @@ const createUser = async function (req, res) {
     //         req.body.password = myPassword
     //    // });
        const bcryptPassword = await bcrypt.hash(password, 10)
-       req.body.password = bcryptPassword
+       data.password = bcryptPassword
     //    console.log(password)
 
 
         //============================address validations================================//
         try{
-            var myAddress = JSON.parse(address)
+            var myAddress = JSON.parse(req.body.address)
+    
         }catch(err){
             return res.status(400).send({status: false , message:"no entry should not start with 0"})
         }
-        console.log(myAddress)
         if (Object.keys(myAddress).length != 2) return res.status(400).send({ status: false, message: "Shipping or billing address is missing" })
         //******shipping validation**************//
         const shipping = myAddress.shipping
@@ -89,9 +91,9 @@ const createUser = async function (req, res) {
         if (typeof(billing.pincode)!= "number") return res.status(400).send({ status: false, message: "please enter billing pincode" });
          if (!/^[1-9][0-9]{5}$/.test(billing.pincode)) return res.status(400).send({ status: false, message: "please enter valid billing pincode" })
       
-         req.body.address = myAddress
+          data.address = myAddress
 
-        let user = await userModel.create(req.body)
+        let user = await userModel.create(data)
         return res.status(201).send({ status: true, message: "User created successfully", data: user })
     } catch (err) {
         return res.status(500).send({ status: false, message: err.message })
@@ -103,6 +105,8 @@ const userLogin = async function (req, res) {
     
     if (!isValid(email) || !isValid(password))
     return res.status(400).send({ status: false, msg: "Provide emailId and Password both" });
+    // if (!isValid(email)) return res.status(400).send({ status: false, message: "please enter email" })
+    if (!/[a-z0-9]+@[a-z]+\.[a-z]{2,3}/.test(email)) return res.status(400).send({ status: false, message: "please enter valid email" })
 
     let myUser = await userModel.findOne({ email: email});
     if(!myUser)return res.status(400).send({ status: false, msg: "emailId is not present in db" });
@@ -131,6 +135,7 @@ const getUser = async function (req, res) {
     try {
         const userId = req.params.userId;
         if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid id format" })
+        if(req.body.userId != userId) return res.status(403).send({status: false , message : "you are not authorized"})
 
         const user = await userModel.findOne({ _id: userId });
 
@@ -199,17 +204,18 @@ const updatedUser = async function (req, res) {
         if(address != null){
         const myAddress = JSON.parse(address)
 
-        if (Object.keys(myAddress).length == 0) return res.status(400).send({ status: false, message: "Shipping or billing address is missing" })
+        if (Object.keys(myAddress).length == 0) return res.status(400).send({ status: false, message: "Address cannot be empty" })
         //******shipping validation**************//
         if(myAddress.shipping != null){
          const shipping = myAddress.shipping
-        // if (Object.keys(shipping).length == 0) return res.status(400).send({ status: false, message: "Some shipping details is missing" })
+        if (Object.keys(shipping).length == 0) return res.status(400).send({ status: false, message: "Shipping details cannot be empty" })
 
 
         const { street, city, pincode } = shipping
         if(street != null){
             if (!isValid(street)) return res.status(400).send({ status: false, message: "please enter shipping street details" });
             user.address.shipping.street = street
+            console.log(street)
         }
         if(city != null){
             if (!isValid(city)) return res.status(400).send({ status: false, message: "please enter shipping city" });
@@ -248,6 +254,7 @@ const updatedUser = async function (req, res) {
         // image validation
         if (req.files.length > 0) {
             const files = req.files;
+            console.log(files)
             if (!files && files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })
             const myFile = files[0]
             const fileType = myFile['mimetype'];
@@ -256,7 +263,7 @@ const updatedUser = async function (req, res) {
             //********uploading image to aws*******/
             const uploadImage = await file.uploadFile(myFile)
             console.log(uploadImage)
-            req.body.profileImage = uploadImage;
+            user.profileImage = uploadImage;
         }
         //check if password is valid or not ?
         if(password != null){
@@ -271,7 +278,7 @@ const updatedUser = async function (req, res) {
 
         //if all condition are passed update data
         // let updatedUser = await userModel.findByIdAndUpdate(userId, req.body, { new: true })
-        await user.save()
+       const updatedUser =  await user.save()
         return res.status(200).send({ status: true, data: updatedUser });
 }
 catch (err) {

@@ -234,7 +234,7 @@ Cart Model
 Cart APIs (authentication required as authorization header - bearer token)
 POST /users/:userId/cart (Add to cart)
 Create a cart for the user if it does not exist. Else add product(s) in cart.
-Get cart id in request body.
+Get user id in request body.
 Get productId in request body.
 Make sure that cart exist.
 Add a product(s) for a user in the cart.
