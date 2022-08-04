@@ -3,10 +3,6 @@ const file = require("../controllers/aws.js");
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose')
 const jwt= require('jsonwebtoken')
-const ObjectId = mongoose.Schema.Types.ObjectId
-
-
-
 
 
 const isValid = function (value) {
@@ -24,10 +20,10 @@ const createUser = async function (req, res) {
         if (Object.keys(req.body).length == 0) return res.status(400).send({ status: false, message: "please enter details" })
 
         if (!isValid(fname)) return res.status(400).send({ status: false, message: "please enter fname" })
-        if (!/^[a-zA-Z ]{2,100}$/.test(fname)) return res.status(400).send({ status: false, message: "please enter fname" })
+        if (!/^[a-zA-Z ]{2,20}$/.test(fname)) return res.status(400).send({ status: false, message: "please enter fname" })
 
         if (!isValid(lname)) return res.status(400).send({ status: false, message: "please enter lname" })
-        if (!/^[a-zA-Z ]{2,100}$/.test(lname)) return res.status(400).send({ status: false, message: "please enter fname" })
+        if (!/^[a-zA-Z ]{2,20}$/.test(lname)) return res.status(400).send({ status: false, message: "please enter fname" })
 
         if (!isValid(email)) return res.status(400).send({ status: false, message: "please enter email" })
         if (!/[a-z0-9]+@[a-z]+\.[a-z]{2,3}/.test(email)) return res.status(400).send({ status: false, message: "please enter valid email" })
@@ -36,7 +32,7 @@ const createUser = async function (req, res) {
 
         //===================================Imagefile validation==========================//
         const files = req.files;
-        if (!files && files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })
+        if (!files ||!files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })
         const myFile = files[0]
         const fileType = myFile['mimetype'];
         const validImageTypes = ['image/gif', 'image/jpeg', 'image/png' ,'image/jpg' ];
@@ -45,7 +41,7 @@ const createUser = async function (req, res) {
         const uploadImage = await file.uploadFile(myFile)
 
         data.profileImage = uploadImage;
-
+         if(!data.profileImage)return res.status(400).send({status:false,message:"please add profile Image"})
         //==================================phone validations============================//
         if (!isValid(phone)) return res.status(400).send({ status: false, message: "please enter phone number" })
         if (!/^([9876]{1})(\d{1})(\d{8})$/.test(phone)) return res.status(400).send({ status: false, message: "please enter valid phone number" })
@@ -56,10 +52,7 @@ const createUser = async function (req, res) {
         if (!isValid(password)) return res.status(400).send({ status: false, message: "please enter password" })
         if (!/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,15}$/.test(password)) return res.status(400).send({ status: false, message: "Please enter strong password of atleast 8 character, It should contain atleast One Capital letter , one lower case letter and special character ," })
         //******password hashing and salting **********/
-    //     const saltRounds = 10;
-    //    const myPassword =  bcrypt.hash(password, saltRounds)//, function (err, hash) {
-    //         req.body.password = myPassword
-    //    // });
+ 
        const bcryptPassword = await bcrypt.hash(password, 10)
        data.password = bcryptPassword
     //    console.log(password)
@@ -67,6 +60,7 @@ const createUser = async function (req, res) {
 
         //============================address validations================================//
         try{
+            if(!req.body.address)return res.status(400).send({status: false , message:"address should be present"})
             var myAddress = JSON.parse(req.body.address)
     
         }catch(err){
@@ -75,12 +69,12 @@ const createUser = async function (req, res) {
         if (Object.keys(myAddress).length != 2) return res.status(400).send({ status: false, message: "Shipping or billing address is missing" })
         //******shipping validation**************//
         const shipping = myAddress.shipping
-        if (Object.keys(shipping).length != 3) return res.status(400).send({ status: false, message: "Some shipping details is missing" })
+        // if (Object.keys(shipping).length != 3) return res.status(400).send({ status: false, message: "Some shipping details is missing" })
         const { street, city, pincode } = shipping
         
         if (!isValid(street)) return res.status(400).send({ status: false, message: "please enter shipping street details" });
         if (!isValid(city)) return res.status(400).send({ status: false, message: "please enter shipping city" });
-        if (typeof(pincode)!="number") return res.status(400).send({ status: false, message: "please enter shipping pincode" });
+        if (typeof(pincode)!="number") return res.status(400).send({ status: false, message: "pincode should be in number" });
         if (!/^[1-9][0-9]{5}$/.test(pincode)) return res.status(400).send({ status: false, message: "please enter valid shippig pincode" })
 
         //******billing validation**************//
@@ -94,7 +88,7 @@ const createUser = async function (req, res) {
           data.address = myAddress
 
         let user = await userModel.create(data)
-        return res.status(201).send({ status: true, message: "User created successfully", data: user })
+        return res.status(201).send({ status: true, message: "User profile details", data: user })
     } catch (err) {
         return res.status(500).send({ status: false, message: err.message })
     }
@@ -103,11 +97,15 @@ const userLogin = async function (req, res) {
     try{
     let { email, password } = req.body;
     
-    if (!isValid(email) || !isValid(password))
-    return res.status(400).send({ status: false, msg: "Provide emailId and Password both" });
-    // if (!isValid(email)) return res.status(400).send({ status: false, message: "please enter email" })
+    // if (!isValid(email) || !isValid(password))
+    // return res.status(400).send({ status: false, msg: "Provide emailId and Password both" });
+    if (!isValid(email)) return res.status(400).send({ status: false, message: "please enter email in string format" })
     if (!/[a-z0-9]+@[a-z]+\.[a-z]{2,3}/.test(email)) return res.status(400).send({ status: false, message: "please enter valid email" })
 
+    if (!isValid(password)) return res.status(400).send({ status: false, message: "please enter password in string format" })
+        if (!/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,15}$/.test(password)) return res.status(400).send({ status: false, message: "invalid password" })
+
+    
     let myUser = await userModel.findOne({ email: email});
     if(!myUser)return res.status(400).send({ status: false, msg: "emailId is not present in db" });
     
@@ -117,7 +115,7 @@ const userLogin = async function (req, res) {
             userId: myUser._id.toString()
         }, "group09",
             {
-                expiresIn: "1h"
+                expiresIn: "10d"
             });
     
         return res.status(200).send({ status: true, msg: "success", userId: myUser._id, token: token })
@@ -135,13 +133,12 @@ const getUser = async function (req, res) {
     try {
         const userId = req.params.userId;
         if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid id format" })
-        if(req.body.userId != userId) return res.status(403).send({status: false , message : "you are not authorized"})
+        if(req.userId != userId) return res.status(403).send({status: false , message : "you are not authorized"})
 
         const user = await userModel.findOne({ _id: userId });
 
         return res.status(200).send({ status: true, message: "User profile details", data: user });
     } catch (error) {
-        // console.log({ status: false, message: error.message });
         return res.status(500).send({ status: false, message: error.message });
     }
 };
@@ -154,13 +151,15 @@ const updatedUser = async function (req, res) {
         //check the userId is Valid or Not ?  
         if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid id format" })
 
+        if(req.userId != userId) return res.status(403).send({status: false , message : "you are not authorized"})
+
         let data = req.body
-        let { fname, lname, email, phone, password, address } = req.body
+        let { fname, lname, email, phone, password, address } = data
 
 
         //check if body is empty or not ?
         if (Object.keys(data).length == 0) {
-            return res.status(400).send({ status: false, msg: "Noting to Update in the Request " });
+            return res.status(400).send({ status: false, msg: "Please enter field to be Updated" });
         }
 
         //check if userid is present in Db or Not ? 
@@ -249,20 +248,19 @@ const updatedUser = async function (req, res) {
          user.address.billing.pincode = pincode
         }}
         }
-        // req.body.address = myAddress
+    
 
         // image validation
         if (req.files.length > 0) {
             const files = req.files;
             console.log(files)
-            if (!files && files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })
+            if (!files || !files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })
             const myFile = files[0]
             const fileType = myFile['mimetype'];
             const validImageTypes = ['image/gif', 'image/jpeg', 'image/png' ,'image/jpg'];
             if (!validImageTypes.includes(fileType)) return res.status(400).send({ status: false, message: "Please enter valid image file" })
             //********uploading image to aws*******/
             const uploadImage = await file.uploadFile(myFile)
-            console.log(uploadImage)
             user.profileImage = uploadImage;
         }
         //check if password is valid or not ?
@@ -274,10 +272,9 @@ const updatedUser = async function (req, res) {
         req.body.password = bcryptPassword
 
     }
-    console.log(req.body)
+
 
         //if all condition are passed update data
-        // let updatedUser = await userModel.findByIdAndUpdate(userId, req.body, { new: true })
        const updatedUser =  await user.save()
         return res.status(200).send({ status: true, data: updatedUser });
 }

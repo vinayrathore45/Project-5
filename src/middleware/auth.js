@@ -1,4 +1,3 @@
-const userModel=require('../models/userModel')
 
 const jwt=require('jsonwebtoken')
 
@@ -8,15 +7,15 @@ const jwt=require('jsonwebtoken')
 const auth= async (req,res,next) =>{
     try{
     let bearerToken= req.headers['authorization'];
-    if(!bearerToken) return res.status(400).send({ status: false, message: "Please, provide the token" });
-  
+    if(!bearerToken) return res.status(401).send({ status: false, message: "Please, provide the token" });
+  console.log(bearerToken)
    
     let bearer = bearerToken.split(' ')
     let token = bearer[1];
 
      jwt.verify(token, "group09" , function(err , data){
         if(err) return res.status(401).send({ status: false, message: "Incorrect Token" })
-        req.body.userId = data
+        req.userId = data.userId
      });
 
   next(); 

@@ -1,6 +1,8 @@
 # productManagment
 Project - Products Management
-Key points
+
+//*************************Key points********************************//
+
 In this project we will work feature wise. That means we pick one object like user, book, blog, etc at a time. We work through it's feature. The steps would be:
 We create it's model.
 We build it's APIs.
@@ -13,7 +15,10 @@ In this project we are changing how we send token with a request. Instead of usi
 Create a group database groupXDatabase. You can clean the db you previously used and resue that.
 This time each group should have a single git branch. Coordinate amongst yourselves by ensuring every next person pulls the code last pushed by a team mate. You branch will be checked as part of the demo. Branch name should follow the naming convention project/productsManagementGroupX
 Follow the naming conventions exactly as instructed.
-FEATURE I - User
+
+
+
+//**********************FEATURE I - User****************************//
 Models
 User Model
 { 
@@ -259,6 +264,8 @@ Check if the productId exists and is not deleted before updating the cart.
 Response format
 On success - Return HTTP status 200. Also return the updated cart document. The response should be a JSON object like this
 On error - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like this
+
+
 GET /users/:userId/cart
 Returns cart summary of the user.
 Make sure that cart exist.
@@ -268,6 +275,9 @@ Get product(s) details in response body.
 Response format
 On success - Return HTTP status 200. Return the cart document. The response should be a JSON object like this
 On error - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like this
+
+
+
 DELETE /users/:userId/cart
 Deletes the cart for the user.
 Make sure that cart exist.
@@ -277,6 +287,9 @@ cart deleting means array of items is empty, totalItems is 0, totalPrice is 0.
 Response format
 On success - Return HTTP status 204. Return a suitable message. The response should be a JSON object like this
 On error - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like this
+
+
+
 FEATURE IV - Order
 Models
 Order Model
@@ -296,6 +309,9 @@ Order Model
   createdAt: {timestamp},
   updatedAt: {timestamp},
 }
+
+
+
 Checkout/Order APIs (Authentication and authorization required)
 POST /users/:userId/orders
 Create an order for the user
@@ -305,6 +321,9 @@ Get cart details in the request body
 Response format
 On success - Return HTTP status 200. Also return the order document. The response should be a JSON object like this
 On error - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like this
+
+
+
 PUT /users/:userId/orders
 Updates an order status
 Make sure the userId in params and in JWT token match.

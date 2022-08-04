@@ -1,7 +1,6 @@
 const productModel = require("../models/productModel.js");
 const mongoose = require('mongoose')
 const file =  require("../controllers/aws.js");
-// const ObjectId = mongoose.Schema.Types.ObjectId
 const ObjectId = require('mongoose').Types.ObjectId;
 
 
@@ -11,13 +10,14 @@ const isValid = function (value) {
     if(typeof value != "string") return false;
     return true;
 };
+
 const isValidRequestBody = function (requestBody) {
-    return Object.keys(requestBody).length > 0;
-  };
+return Object.keys(requestBody).length > 0;
+};
 
 
 
-  const isValidSize = function (size) {
+const isValidSize = function (size) {
     const validSize = size.split(",").map(x => x.toUpperCase().trim())
     let uniqueValidSize = validSize.filter((item,
       index) => validSize.indexOf(item) === index);
@@ -37,8 +37,16 @@ const isValidRequestBody = function (requestBody) {
 
 const createProduct = async function(req,res){
     try{
-    const data = JSON.parse(req.body.data)
-    const { title ,description , price ,isFreeShipping ,style,availableSizes,installments } = data
+        if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
+        const data = JSON.parse(req.body.data)
+        
+    const { title ,description , price ,isFreeShipping ,style,availableSizes,installments, ...rest } = data
+    if (Object.keys(req.body).length == 0) return res.status(400).send({ status: false, message: "please enter details" })
+   
+
+    if (Object.keys(rest).length != 0) {
+        return res.status(400).send({ status: false, msg: "Please provide suggested key" })
+    }
 
     if (!isValid(title)) return res.status(400).send({ status: false, message: "please enter title" })
     const usedTitle = await productModel.findOne({title:title})
@@ -58,7 +66,7 @@ const createProduct = async function(req,res){
     }
 
         const files = req.files;
-        if (!files && files.length > 0) return res.status(400).send({ status: false, message: "please enter poductImage" })
+        if (!files || !files.length > 0) return res.status(400).send({ status: false, message: "please enter poductImage" })
         const myFile = files[0]
         const fileType = myFile['mimetype'];
         const validImageTypes = ['image/gif', 'image/jpeg', 'image/png' ,'image/jpg'];
@@ -68,7 +76,9 @@ const createProduct = async function(req,res){
         console.log(uploadImage)
         req.body.productImage = uploadImage;
         
-        
+       if(!Array.isArray(availableSizes))return res.status(400).send({ status: false, message: "availableSizes should be an array" }) 
+       
+       if(availableSizes.length == 0)return res.status(400).send({ status: false, message: "At  least one size is required" }) 
         if (!(availableSizes.every(val => ["S", "XS", "M", "X", "L", "XXL", "XL"].includes(val)))) {
             return res.status(400).send({ status: false, msg: 'You Can enter Only ["S", "XS", "M", "X", "L", "XXL", "XL"] in sizes ' })
         };
@@ -91,6 +101,7 @@ const createProduct = async function(req,res){
 const updatedProduct = async function (req, res) {
     try {
         let productId = req.params.productId;
+        if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
         let data = JSON.parse(req.body.data)
         let { title, description, price,  isFreeShipping, style, installments , availableSizes , ...rest } = data
 
@@ -102,7 +113,7 @@ const updatedProduct = async function (req, res) {
         if (!product) return res.status(404).send({ status: false, msg: "ProductId is not present in DB " })
 
         // check if isDeleated Status is True
-        if (product.isDeleted == true) return res.status(400).send({ status: false, msg: "product is Already Deleted" })
+        if (product.isDeleted == true) return res.status(400).send({ status: false, msg: "product is Deleted" })
 
         //check if the data in request body is present or not ?
         if (Object.keys(data).length == 0) {
@@ -209,7 +220,6 @@ const filterProduct = async function (req, res) {
 
         } else {
             let availableSizes = req.query.size
-            console.log(availableSizes)
             let name = req.query.name
             let priceGreaterThan = req.query.priceGreaterThan
             let priceLessThan = req.query.priceLessThan
@@ -295,7 +305,7 @@ const getProductById = async function(req,res){
 
     if(!product)return res.status(404).send({status:false,msg:"The given productId is not there in database"})
 
-    if(product.isDeleted == true) return res.status(400).send({status:false,msg:"The product is already deleted"})
+    if(product.isDeleted == true) return res.status(400).send({status:false,msg:"The product is deleted"})
 
     return res.status(200).send({status:true,msg:"success",data:product})            
         
@@ -311,6 +321,7 @@ const deletedProduct = async function (req, res) {
     if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, msg: "productId is Invalid" })
 
     let product = await productModel.findById(productId)
+    if(!product) return res.status(404).send({status: false, msg: "Product is not present" })
 
     //check if isDeleated Status is True
     if (product.isDeleted) {
