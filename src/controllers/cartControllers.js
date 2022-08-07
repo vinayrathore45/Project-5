@@ -14,20 +14,28 @@ const isValid = function (value) {
 const createCart = async function (req, res) {
   try {
     const userId = req.params.userId;
+    if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid id format" });
+
+    let user = await userModel.findById(userId);
+
+    if (!user) return res.status(404).send({ status: false, message: "No such user present" });
+
+    if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
+    
     const { cartId, productId, quantity } = req.body;
 
-    if (cartId) {
-      if (!mongoose.isValidObjectId(cartId))
-        return res.status(400).send({ msg: "inavalid id format" });
-    }
+    if (cartId !=null ) {
+      if (!mongoose.isValidObjectId(cartId))return res.status(400).send({ msg: "inavalid cartId" });
+       const presentCart = await cartModel.findById(cartId)
+       if(!presentCart)return res.status(404).send({status: false , message: "cart not found" });
+   }
 
-    if (!mongoose.isValidObjectId(userId))
-      return res.status(400).send({ msg: "inavalid id format" });
-    let user = await userModel.findById(userId);
-    if (!user)
-      return res
-        .status(404)
-        .send({ status: false, message: "No such user present" });
+     if(!isValid(productId))return res.status(400).send({ msg: "please enter productId" })
+     if (!mongoose.isValidObjectId(productId))return res.status(400).send({ msg: "inavalid productId" });
+
+     if(typeof quantity != "number")return res.status(400).send({ msg: "quantity should be a number" })
+     if(quantity < 1) return res.status(400).send({ msg: "quantity should be min 1" })
+
     // if(!mongoose.isValidObjectId(items.productId)) return res.status(400).send({ msg: "inavalid id format" })
     let product = await productModel.findOne({
       _id: productId,
@@ -60,15 +68,15 @@ const createCart = async function (req, res) {
           existingCart.totalPrice += product.price * quantity;
           existingCart.save();
           return res.status(200).send({ status: true, message: existingCart });
-        } else {
-          let newProduct = { productId: productId, quantity: quantity };
-          existingCart.items.push(newProduct);
-          existingCart.totalPrice += product.price * quantity;
-          existingCart.totalItems++;
-          existingCart.save();
-          return res.status(200).send({ status: true, message: existingCart });
-        }
+        } 
       }
+    
+      let newProduct = { productId: productId, quantity: quantity };
+      existingCart.items.push(newProduct);
+      existingCart.totalPrice += product.price * quantity;
+      existingCart.totalItems++;
+      existingCart.save();
+      return res.status(200).send({ status: true, message: existingCart });
     }
     const data = {
       userId: userId,
@@ -84,7 +92,17 @@ const createCart = async function (req, res) {
 };
 
 const updatedCart = async function (req, res) {
+  try{
   const userId = req.params.userId;
+  if (!ObjectId.isValid(userId)) {
+    return res.status(400).send({ status: false, msg: "userId is Invalid" });
+  }
+  const user = await userModel.findById(userId);
+    if (!user)
+      return res
+        .status(404)
+        .send({ status: false, message: "user not exist in Database" });
+  if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
   let data = req.body;
   let { cartId, productId, removeProduct } = data;
   if (!ObjectId.isValid(cartId)) {
@@ -119,7 +137,7 @@ const updatedCart = async function (req, res) {
   if (product.isDeleted == true)
     return res
       .status(400)
-      .send({ status: false, msg: "product is Already Deleted" });
+      .send({ status: false, msg: "product is  Deleted" });
 
   if (!isValid(removeProduct))
     return res.status(400).send({ status: false, message: "please enter " });
@@ -182,21 +200,26 @@ const updatedCart = async function (req, res) {
       }
     }
   }
+} catch (err) {
+  return res.status(500).send({ status: false, message: err.message });
+}
 };
 
 const getCart = async function (req, res) {
   try {
     const userId = req.params.userId;
-    if (!mongoose.isValidObjectId(userId))
-      return res
-        .status(400)
-        .send({ status: false, msg: "userId is not valid" });
-
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).send({ status: false, msg: "userId is Invalid" });
+    }
     const user = await userModel.findById(userId);
     if (!user)
       return res
         .status(404)
         .send({ status: false, message: "user not exist in Database" });
+
+
+    if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
+
 
     const getCartData = await cartModel
       .findOne({ userId: userId })
@@ -217,10 +240,14 @@ const deleteCart = async function (req, res) {
   try {
     const userId = req.params.userId;
 
-    if (!mongoose.isValidObjectId(userId))
-      return res
-        .status(400)
-        .send({ status: true, Message: "Invalid ProductId !" });
+     if (!ObjectId.isValid(userId)) {
+      return res.status(400).send({ status: false, msg: "userId is Invalid" });
+    }
+    let user = await userModel.findById(userId)
+    if(!user) return res.status(404).send({status:false , message : "No such user present"})
+
+
+    if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
 
     const checkCart = await cartModel.findOne({ userId: userId });
 
@@ -239,7 +266,7 @@ const deleteCart = async function (req, res) {
       { items: [], totalPrice: 0, totalItems: 0 }
     );
 
-    res.status(200).send({ status: true, Message: "sucessfully deleted" });
+    res.status(204).send({ status: true, Message: "sucessfully deleted" });
   } catch (error) {
     res.status(500).send({ status: false, Message: error.message });
   }

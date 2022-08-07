@@ -251,7 +251,7 @@ const updatedUser = async function (req, res) {
     
 
         // image validation
-        if (req.files.length > 0) {
+        if (req.files != null) {
             const files = req.files;
             console.log(files)
             if (!files || !files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })

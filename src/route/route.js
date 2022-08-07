@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { createUser, updatedUser, userLogin, getUser } = require('../controllers/userControllers.js')
-const { createCart } = require('../controllers/cartControllers.js')
+const { createCart ,updatedCart, getCart, deleteCart } = require('../controllers/cartControllers.js')
 const { createProduct, updatedProduct , getProductById , deletedProduct , filterProduct } = require('../controllers/productControllers.js')
 const { createOrder , updateOrder} = require('../controllers/orderControllers.js')
 const {auth} = require('../middleware/auth.js')
@@ -26,12 +26,18 @@ router.put('/products/:productId', updatedProduct)
 router.get('/products/:productId', getProductById)
 
 router.delete('/products/:productId', deletedProduct)
+//--------------------------cart--------------------------------------------------------------//
+router.post('/users/:userId/cart', auth , createCart)
 
-router.post('/users/:userId/cart ', userLogin)
+router.put('/users/:userId/cart', auth , updatedCart)
 
-router.post('/users/:userId/orders', createOrder)
+router.get('/users/:userId/cart', auth , getCart)
 
-router.put('/users/:userId/orders', updateOrder)
+router.delete('/users/:userId/cart',auth , deleteCart)
+//---------------------------orders----------------------------------------------------------//
+router.post('/users/:userId/orders', auth ,createOrder)
+
+router.put('/users/:userId/orders', auth , updateOrder)
 
 
 

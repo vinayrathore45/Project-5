@@ -244,15 +244,34 @@ const filterProduct = async function (req, res) {
                 filter.price = { $lt: `${priceLessThan}` }
             }
 
-            if (availableSizes != null) {
-                if(isValidSize(availableSizes).length != 0){
-                 let reqSizes = isValidSize(availableSizes) 
-                 console.log(reqSizes)
-                    filter.availableSizes = { $in: `${reqSizes}` }
-                } else {
-                    return res.status(400).send({ status: false, message: `size should be one these only ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
-                }
+            // if (availableSizes != null) {
+            // let sizes = availableSizes.split(",").map(x => x.toUpperCase().trim())
+            // console.log(sizes)
+            //     for(let i = 0 ; i < sizes.length ; i++){
+            //     if(!["S", "XS", "M", "X", "L", "XXL", "XL"].includes(sizes[i]))
+            //     return res.status(400).send({ status: false, message: `size should be one these only ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
+            // }
+                // if(isValidSize(availableSizes).length != 0){
+                //  let reqSizes = isValidSize(availableSizes) 
+                //  console.log(reqSizes)
+                //     filter.availableSizes = { $in: `${reqSizes}` }
+                // } else {
+                //     return res.status(400).send({ status: false, message: `size should be one these only ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
+                // }
+                if (availableSizes != null) {
+                    let sizes = availableSizes.split(",").map(x => x.toUpperCase().trim())
+            console.log(sizes)
+                for(let i = 0 ; i < sizes.length ; i++){
+                if(!["S", "XS", "M", "X", "L", "XXL", "XL"].includes(sizes[i]))
+                return res.status(400).send({ status: false, message: `size should be one these only ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
             }
+                    if (Array.isArray(isValidSize(availableSizes))) {
+                        filter.availableSizes = { $in: isValidSize(availableSizes) }
+                    } else {
+                        return res.status(400).send({ status: false, message: `size should be one these only ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
+                    }
+                }
+            // }
 
             //sorting
             if (req.query.priceSort != null) {

@@ -206,6 +206,9 @@ Sorted by product price in ascending or descending. The key value pair will look
 Response format
 On success - Return HTTP status 200. Also return the product documents. The response should be a JSON object like this
 On error - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like this
+
+
+
 GET /products/:productId
 Returns product details by product id
 Response format

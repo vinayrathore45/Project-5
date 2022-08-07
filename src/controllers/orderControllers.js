@@ -12,6 +12,9 @@ const createOrder = async function(req,res){
     let user = await userModel.findById(userId)
     if(!user) return res.status(404).send({status:false , message : "No such user present"})
 
+    if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
+    
+
     const { cartId , cancellable } = req.body
     if(!cartId) ({status:false , message : "please enter cartId"})
     if(!mongoose.isValidObjectId(cartId)) return res.status(400).send({ msg: "inavalid id format" })
@@ -61,14 +64,6 @@ const updateOrder = async function (req, res) {
     try{
     let userId = req.params.userId;
   
-    let data = req.body;
-  
-    let { orderId, status } = data;
-  
-    if (Object.keys(data).length == 0) {
-      return res.status(400).send({ status: false, msg: "please fill the data" });
-    }
-  
     if (!mongoose.isValidObjectId(userId)) {
       return res.status(400).send({ status: false, msg: "userId is not valid" });
     }
@@ -76,17 +71,32 @@ const updateOrder = async function (req, res) {
     let user = await userModel.findById(userId);
   
     if (!user) {
-      return res.status(400).send({ status: false, msg: "user  not found" });
+      return res.status(404).send({ status: false, msg: "user  not found" });
     }
+    if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
+
+
+    let data = req.body;
+    let { orderId, status } = data;
+  
+    if (Object.keys(data).length == 0) {
+      return res.status(400).send({ status: false, msg: "please fill the data" });
+    }
+  
   
     if (!orderId) {
       return res
         .status(400)
-        .send({ status: false, msg: "OrderId is not found in db" });
+        .send({ status: false, msg: "Please enter orderId" });
     }
   
     if (!mongoose.isValidObjectId(orderId)) {
       return res.status(400).send({ status: false, msg: "OrderId is not valid" });
+    }
+    if (!status) {
+      return res
+        .status(400)
+        .send({ status: false, message: "status is required to update order" });
     }
   
     let order = await orderModel.findOne({_id:orderId,isDeleted:false})
@@ -98,7 +108,7 @@ const updateOrder = async function (req, res) {
     if(order.status != "pending"){
         return res
         .status(400)
-        .send({ status: false, msg: "order-status is already cancelled or completed" });
+        .send({ status: false, msg: `order-status is already ${order.status}` });
     }
   
     if (order.userId != userId) {
@@ -107,22 +117,20 @@ const updateOrder = async function (req, res) {
         .send({ status: false, msg: "Make sure OrderId and UserId is correct" });
     }
   
-    if (!status) {
-      return res
-        .status(400)
-        .send({ status: false, message: "status is required to update order" });
-    }
+    
   
-    let validStatus = ["pending", "completed", "cancelled"];
+    let validStatus = ["completed", "cancelled"];
   
     if (!validStatus.includes(status)) {
       return res
         .status(400)
         .send({
           status: false,
-          message: `status should be "pending", or "completed", or "cancelled"`,
+          message: "status should be  completed or cancelled"
         });
     }
+
+
   if(status == "cancelled"){
     if (order.cancellable == false) {
         return res
