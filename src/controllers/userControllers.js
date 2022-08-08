@@ -79,7 +79,7 @@ const createUser = async function (req, res) {
 
         //******billing validation**************//
         const billing = myAddress.billing
-        if (Object.keys(billing).length != 3) return res.status(400).send({ status: false, message: "Some billing details is missing" })
+        // if (Object.keys(billing).length != 3) return res.status(400).send({ status: false, message: "Some billing details is missing" })
         if (!isValid(billing.street)) return res.status(400).send({ status: false, message: "please enter billing street details" });
         if (!isValid(billing.city)) return res.status(400).send({ status: false, message: "please enter billing city" });
         if (typeof(billing.pincode)!= "number") return res.status(400).send({ status: false, message: "please enter billing pincode" });
@@ -252,6 +252,7 @@ const updatedUser = async function (req, res) {
 
         // image validation
         if (req.files != null) {
+            if(req.files.length > 0){
             const files = req.files;
             console.log(files)
             if (!files || !files.length > 0) return res.status(400).send({ status: false, message: "please enter profileImage" })
@@ -262,7 +263,7 @@ const updatedUser = async function (req, res) {
             //********uploading image to aws*******/
             const uploadImage = await file.uploadFile(myFile)
             user.profileImage = uploadImage;
-        }
+        }}
         //check if password is valid or not ?
         if(password != null){
         var passwordReg = /^(?=.[a-z])(?=.[A-Z])(?=.\d)(?=.[@$!%?&])[A-Za-z\d@$!%?&]{8,15}$/;

@@ -37,10 +37,10 @@ const isValidSize = function (size) {
 
 const createProduct = async function(req,res){
     try{
-        if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
-        const data = JSON.parse(req.body.data)
+        // if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
+        const data = req.body
         
-    const { title ,description , price ,isFreeShipping ,style,availableSizes,installments, ...rest } = data
+    const { title ,description , price ,isFreeShipping ,style,availableSizes,installments ,...rest } = data
 
     if (Object.keys(req.body).length == 0) return res.status(400).send({ status: false, message: "please enter details" })
    
@@ -56,7 +56,7 @@ const createProduct = async function(req,res){
     if(!isValid(description))return res.status(400).send({ status: false, message: "please enter description" })
     if(!/^[a-zA-Z]/.test(description))return res.status(400).send({ status: false, message: "Description should start with alphabates" })
  
-    if(typeof price != "number")return res.status(400).send({ status: false, message: "price should be in number" })
+    if(!isValid(price))return res.status(400).send({ status: false, message: "Please enter price" })
     if(!/^[1-9]\d*$/.test(price))return res.status(400).send({ status: false, message: "invalid price" })
     
     data.currencyId = "INR"
@@ -76,19 +76,24 @@ const createProduct = async function(req,res){
         const uploadImage = await file.uploadFile(myFile)
 
         req.body.productImage = uploadImage;
+
+        let availableSize = JSON.parse(availableSizes)
         
-       if(!Array.isArray(availableSizes))return res.status(400).send({ status: false, message: "availableSizes should be an array" }) 
+       if(!Array.isArray(availableSize))return res.status(400).send({ status: false, message: "availableSizes should be an array" }) 
        
-       if(availableSizes.length == 0)return res.status(400).send({ status: false, message: "At  least one size is required" }) 
-        if (!(availableSizes.every(val => ["S", "XS", "M", "X", "L", "XXL", "XL"].includes(val)))) {
+       if(availableSize.length == 0)return res.status(400).send({ status: false, message: "At  least one size is required" }) 
+        if (!(availableSize.every(val => ["S", "XS", "M", "X", "L", "XXL", "XL"].includes(val)))) {
             return res.status(400).send({ status: false, msg: 'You Can enter Only ["S", "XS", "M", "X", "L", "XXL", "XL"] in sizes ' })
         };
+
+        req.body.availableSizes = availableSize
         
         if(style != null){
             if(!isValid(style))return res.status(400).send({ status: false, message: "please enter valid style" })
         }
         if(installments != null){
-            if(typeof installments != "number")return res.status(400).send({ status: false, message: "please enter valid installment number" })
+            if(!isValid(installments))return res.status(400).send({ status: false, message: "please enter valid installment number" })
+            if(!/^[1-9]{1,2}\d*$/.test(installments))return res.status(400).send({ status: false, message: "please enter valid installment number" })
         }
 
         let product = await productModel.create(data)
@@ -105,9 +110,9 @@ const updatedProduct = async function (req, res) {
         if(!isValid(productId))return res.status(400).send({ msg: "Please enter productId" })
         if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, msg: "productId is not valid" });
     
-        if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
+        // if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
 
-        let data = JSON.parse(req.body.data)
+        let data = req.body
 
         let { title, description, price,  isFreeShipping, style, installments , availableSizes , ...rest } = data
 
@@ -148,23 +153,26 @@ const updatedProduct = async function (req, res) {
 
         if (description != null) {
             if(!isValid(description)) return res.status(400).send({ status: false, msg: "description invalid " })
+
+            if(!/^[a-zA-Z][a-zA-Z0-9.,$;]+$/.test(description)) return res.status(400).send({ status: false, msg: "description invalid " })
              product.description = description
         }
 
         
         if(price != null){
-        if(typeof price != "number")return res.status(400).send({ status: false, message: "price should be in number" })
+        if(!isValid(price))return res.status(400).send({ status: false, message: "price should be in number" })
         if(!/^[1-9]\d*$/.test(price))return res.status(400).send({ status: false, message: "invalid price" })
          product.price = price
 }
         if(isFreeShipping != null){
-        if (!(typeof isFreeShipping === "boolean")) 
+        if (!(isFreeShipping == "true" ||isFreeShipping == "false")) 
             return res.status(400).send({ status: false, msg: "isFreeShipping Must be TRUE OR FALSE" });
             product.isFreeShipping = isFreeShipping
         }
         
         if(installments != null){
-            if(typeof installments != "number") return res.status(400).send({ status: false, msg: " installments should be number" })
+            if(!isValid(installments)) return res.status(400).send({ status: false, msg: " installments should be number" })
+            if(!/^[1-9]{1,2}\d*$/.test(installments))return res.status(400).send({ status: false, message: "please enter valid installment number" })
             product.installments = installments
         }
 
@@ -189,7 +197,8 @@ const updatedProduct = async function (req, res) {
         }
         
             if(availableSizes != null){
-                let newSizes = isValidSize(availableSizes)  
+                if(!isValid(availableSizes))return res.status(400).send({ status: false, message: "please enter available sizes" })
+                var newSizes = isValidSize(availableSizes)  
                 for(let i = 0 ; i < newSizes.length ; i++){
                     if(!product.availableSizes.includes(newSizes[i])){
                         product.availableSizes.push(newSizes[i])
@@ -197,6 +206,7 @@ const updatedProduct = async function (req, res) {
                     
                 }
             }
+            if(!newSizes)return res.status(400).send({ status: false, message: "please enter valid available sizes" })
             
             product.save()
 
@@ -248,20 +258,7 @@ const filterProduct = async function (req, res) {
                 filter.price = { $lt: `${priceLessThan}` }
             }
 
-            // if (availableSizes != null) {
-            // let sizes = availableSizes.split(",").map(x => x.toUpperCase().trim())
-            // console.log(sizes)
-            //     for(let i = 0 ; i < sizes.length ; i++){
-            //     if(!["S", "XS", "M", "X", "L", "XXL", "XL"].includes(sizes[i]))
-            //     return res.status(400).send({ status: false, message: `size should be one these only ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
-            // }
-                // if(isValidSize(availableSizes).length != 0){
-                //  let reqSizes = isValidSize(availableSizes) 
-                //  console.log(reqSizes)
-                //     filter.availableSizes = { $in: `${reqSizes}` }
-                // } else {
-                //     return res.status(400).send({ status: false, message: `size should be one these only ${["S", "XS", "M", "X", "L", "XXL", "XL"]}` })
-                // }
+           
                 if (availableSizes != null) {
                     let sizes = availableSizes.split(",").map(x => x.toUpperCase().trim())
             console.log(sizes)

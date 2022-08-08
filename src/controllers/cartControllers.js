@@ -33,9 +33,13 @@ const createCart = async function (req, res) {
      if(!isValid(productId))return res.status(400).send({ msg: "please enter productId" })
      if (!mongoose.isValidObjectId(productId))return res.status(400).send({ msg: "inavalid productId" });
 
+     if(quantity != null){
      if(typeof quantity != "number")return res.status(400).send({ msg: "quantity should be a number" })
      if(quantity < 1) return res.status(400).send({ msg: "quantity should be min 1" })
-
+     }
+     if(!quantity){
+      req.body.quantity = 1
+     }
     // if(!mongoose.isValidObjectId(items.productId)) return res.status(400).send({ msg: "inavalid id format" })
     let product = await productModel.findOne({
       _id: productId,
@@ -64,8 +68,8 @@ const createCart = async function (req, res) {
           });
       for (let i = 0; i < existingCart.items.length; i++) {
         if (existingCart.items[i].productId == productId) {
-          existingCart.items[i].quantity += quantity;
-          existingCart.totalPrice += product.price * quantity;
+          existingCart.items[i].quantity += req.body.quantity;
+          existingCart.totalPrice += product.price * req.body.quantity;
           existingCart.save();
           return res.status(200).send({ status: true, message: existingCart });
         } 
@@ -73,15 +77,15 @@ const createCart = async function (req, res) {
     
       let newProduct = { productId: productId, quantity: quantity };
       existingCart.items.push(newProduct);
-      existingCart.totalPrice += product.price * quantity;
+      existingCart.totalPrice += product.price * req.body.quantity;
       existingCart.totalItems++;
       existingCart.save();
       return res.status(200).send({ status: true, message: existingCart });
     }
     const data = {
       userId: userId,
-      items: [{ productId: productId, quantity: quantity }],
-      totalPrice: product.price * quantity,
+      items: [{ productId: productId, quantity: req.body.quantity }],
+      totalPrice: product.price * req.body.quantity,
       totalItems: 1,
     };
     const newCart = await cartModel.create(data);
