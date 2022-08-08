@@ -14,9 +14,9 @@ const isValid = function (value) {
 
 const createUser = async function (req, res) {
     try {
-         let data = JSON.parse(req.body.data)
+         let data = req.body
            
-        const { fname, lname, email, phone, password} = data
+        const { fname, lname, email, phone, password , address} = data
         if (Object.keys(req.body).length == 0) return res.status(400).send({ status: false, message: "please enter details" })
 
         if (!isValid(fname)) return res.status(400).send({ status: false, message: "please enter fname" })

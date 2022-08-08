@@ -41,6 +41,7 @@ const createProduct = async function(req,res){
         const data = JSON.parse(req.body.data)
         
     const { title ,description , price ,isFreeShipping ,style,availableSizes,installments, ...rest } = data
+
     if (Object.keys(req.body).length == 0) return res.status(400).send({ status: false, message: "please enter details" })
    
 
@@ -73,7 +74,7 @@ const createProduct = async function(req,res){
         if (!validImageTypes.includes(fileType)) return res.status(400).send({ status: false, message: "Please enter valid image file" })
         //********uploading image to aws*******/
         const uploadImage = await file.uploadFile(myFile)
-        console.log(uploadImage)
+
         req.body.productImage = uploadImage;
         
        if(!Array.isArray(availableSizes))return res.status(400).send({ status: false, message: "availableSizes should be an array" }) 
@@ -101,13 +102,16 @@ const createProduct = async function(req,res){
 const updatedProduct = async function (req, res) {
     try {
         let productId = req.params.productId;
+        if(!isValid(productId))return res.status(400).send({ msg: "Please enter productId" })
+        if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, msg: "productId is not valid" });
+    
         if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
+
         let data = JSON.parse(req.body.data)
+
         let { title, description, price,  isFreeShipping, style, installments , availableSizes , ...rest } = data
 
-        if (!ObjectId.isValid(productId)) {
-            return res.status(400).send({ status: false, msg: "PRoductId is Invalid" });
-        }
+      
         //check if id is present in Db or Not ? 
         let product = await productModel.findById(productId)
         if (!product) return res.status(404).send({ status: false, msg: "ProductId is not present in DB " })
@@ -317,7 +321,7 @@ const filterProduct = async function (req, res) {
 const getProductById = async function(req,res){
     try{
      let productId = req.params.productId;
-
+     if(!isValid(productId))return res.status(400).send({ msg: "Please enter productId" })
     if(!mongoose.isValidObjectId(productId))return res.status(400).send({status:false,msg:"The given productId is not valid"})
 
     let product = await productModel.findById(productId);
@@ -337,6 +341,7 @@ const deletedProduct = async function (req, res) {
     try{
     let productId = req.params.productId;
 
+     if(!isValid(productId))return res.status(400).send({ msg: "Please enter productId" })
     if (!mongoose.isValidObjectId(productId)) return res.status(400).send({ status: false, msg: "productId is Invalid" })
 
     let product = await productModel.findById(productId)
