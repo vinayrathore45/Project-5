@@ -17,7 +17,7 @@ const createOrder = async function(req,res){
 
     if(!isValid(userId))return res.status(400).send({ msg: "Please enter userId" })
     if(!mongoose.isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid userId" })
-    let user = await userModel.findById(userId)
+    let user = await userModel.findOne({_id:userId , isDeleted : false})
     if(!user) return res.status(404).send({status:false , message : "No such user present"})
 
     if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
@@ -81,7 +81,7 @@ const updateOrder = async function (req, res) {
       return res.status(400).send({ status: false, msg: "userId is not valid" });
     }
   
-    let user = await userModel.findById(userId);
+    let user = await userModel.findOne({_id:userId , isDeleted : false});
   
     if (!user) {
       return res.status(404).send({ status: false, msg: "user  not found" });

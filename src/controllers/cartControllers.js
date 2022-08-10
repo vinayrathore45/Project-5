@@ -16,7 +16,7 @@ const createCart = async function (req, res) {
     const userId = req.params.userId;
     if (!mongoose.isValidObjectId(userId)) return res.status(400).send({ msg: "inavalid id format" });
 
-    let user = await userModel.findById(userId);
+    let user = await userModel.findOne({_id:orderId,isDeleted:false});
 
     if (!user) return res.status(404).send({ status: false, message: "No such user present" });
 
@@ -75,7 +75,7 @@ const createCart = async function (req, res) {
         } 
       }
     
-      let newProduct = { productId: productId, quantity: quantity };
+      let newProduct = { productId: productId, quantity: req.body.quantity };
       existingCart.items.push(newProduct);
       existingCart.totalPrice += product.price * req.body.quantity;
       existingCart.totalItems++;
@@ -101,7 +101,7 @@ const updatedCart = async function (req, res) {
   if (!ObjectId.isValid(userId)) {
     return res.status(400).send({ status: false, msg: "userId is Invalid" });
   }
-  const user = await userModel.findById(userId);
+  const user = await userModel.findOne({_id:orderId,isDeleted:false});
     if (!user)
       return res
         .status(404)
@@ -109,7 +109,7 @@ const updatedCart = async function (req, res) {
   if(req.userId != userId)return res.status(403).send({status: false , message: "Authorization failed" });
   let data = req.body;
   let { cartId, productId, removeProduct } = data;
-  if (!ObjectId.isValid(cartId)) {
+  if (!mongoose.isValidObjectId(cartId)) {
     return res.status(400).send({ status: false, msg: "cartId is Invalid" });
   }
 
@@ -128,7 +128,7 @@ const updatedCart = async function (req, res) {
 
   // if (cart.isDeleted == true) return res.status(400).send({ status: false, msg: "cart is Already Deleted" })
 
-  if (!ObjectId.isValid(productId)) {
+  if (!mongoose.isValidObjectId(productId)) {
     return res.status(400).send({ status: false, msg: "productId is Invalid" });
   }
 
@@ -143,8 +143,8 @@ const updatedCart = async function (req, res) {
       .status(400)
       .send({ status: false, msg: "product is  Deleted" });
 
-  if (!isValid(removeProduct))
-    return res.status(400).send({ status: false, message: "please enter " });
+  if (typeof removeProduct != "number")
+    return res.status(400).send({ status: false, message: "please enter quantity to be removed either 0 , 1" });
   if (!/^[0|1]{1}$/.test(removeProduct))
     return res
       .status(400)
@@ -179,7 +179,7 @@ const updatedCart = async function (req, res) {
           .status(200)
           .send({
             status: true,
-            message: "product added to cart",
+            message: "product removed from the cart",
             data: updatedCart,
           });
       } else {
@@ -212,10 +212,10 @@ const updatedCart = async function (req, res) {
 const getCart = async function (req, res) {
   try {
     const userId = req.params.userId;
-    if (!ObjectId.isValid(userId)) {
+    if (!mongoose.isValidObjectId(userId)) {
       return res.status(400).send({ status: false, msg: "userId is Invalid" });
     }
-    const user = await userModel.findById(userId);
+    const user = await userModel.findOne({_id:orderId,isDeleted:false});
     if (!user)
       return res
         .status(404)
@@ -244,10 +244,10 @@ const deleteCart = async function (req, res) {
   try {
     const userId = req.params.userId;
 
-     if (!ObjectId.isValid(userId)) {
+     if (!mongoose.isValidObjectId(userId)) {
       return res.status(400).send({ status: false, msg: "userId is Invalid" });
     }
-    let user = await userModel.findById(userId)
+    let user = await userModel.findOne({_id:orderId,isDeleted:false})
     if(!user) return res.status(404).send({status:false , message : "No such user present"})
 
 

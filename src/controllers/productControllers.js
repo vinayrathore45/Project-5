@@ -38,7 +38,7 @@ const isValidSize = function (size) {
 const createProduct = async function(req,res){
     try{
         // if(!req.body.data) return res.status(400).send({ status: false, message:"please enter valid data" })
-        const data = req.body
+    const data = req.body
         
     const { title ,description , price ,isFreeShipping ,style,availableSizes,installments ,...rest } = data
 
@@ -54,7 +54,7 @@ const createProduct = async function(req,res){
     if(usedTitle) return res.status(409).send({ status: false, message: "Title is already used" })
 
     if(!isValid(description))return res.status(400).send({ status: false, message: "please enter description" })
-    if(!/^[a-zA-Z]/.test(description))return res.status(400).send({ status: false, message: "Description should start with alphabates" })
+    if(!/[a-zA-Z]+/.test(description))return res.status(400).send({ status: false, message: "Description should start with alphabates" })
  
     if(!isValid(price))return res.status(400).send({ status: false, message: "Please enter price" })
     if(!/^[1-9]\d*$/.test(price))return res.status(400).send({ status: false, message: "invalid price" })
@@ -63,8 +63,10 @@ const createProduct = async function(req,res){
     data.currencyFormat = "₹"
 
     if(isFreeShipping != null){
-        if(typeof isFreeShipping != "boolean") return res.status(400).send({ status: false, message: "isFreeShipping value should be either true or false" })
-    }
+        if (!(isFreeShipping == "true" ||isFreeShipping == "false")) 
+            return res.status(400).send({ status: false, msg: "isFreeShipping Must be TRUE OR FALSE" });
+            product.isFreeShipping = isFreeShipping
+        }
 
         const files = req.files;
         if (!files || !files.length > 0) return res.status(400).send({ status: false, message: "please enter poductImage" })
@@ -77,7 +79,7 @@ const createProduct = async function(req,res){
 
         req.body.productImage = uploadImage;
 
-        let availableSize = JSON.parse(availableSizes)
+       let availableSize = JSON.parse(availableSizes)
         
        if(!Array.isArray(availableSize))return res.status(400).send({ status: false, message: "availableSizes should be an array" }) 
        
@@ -96,7 +98,7 @@ const createProduct = async function(req,res){
             if(!/^[1-9]{1,2}\d*$/.test(installments))return res.status(400).send({ status: false, message: "please enter valid installment number" })
         }
 
-        let product = await productModel.create(data)
+        let product = await productModel.create(req.body)
         return res.status(201).send({ status: true, message: "product created successfully", data: product })
     } catch (err) {
         return res.status(500).send({ status: false, message: err.message })
@@ -154,7 +156,7 @@ const updatedProduct = async function (req, res) {
         if (description != null) {
             if(!isValid(description)) return res.status(400).send({ status: false, msg: "description invalid " })
 
-            if(!/^[a-zA-Z][a-zA-Z0-9.,$;]+$/.test(description)) return res.status(400).send({ status: false, msg: "description invalid " })
+            if(!/[a-zA-Z]+/.test(description)) return res.status(400).send({ status: false, msg: "description invalid " })
              product.description = description
         }
 
@@ -205,8 +207,8 @@ const updatedProduct = async function (req, res) {
                     }
                     
                 }
+                if(!newSizes)return res.status(400).send({ status: false, message: "please enter valid available sizes" })
             }
-            if(!newSizes)return res.status(400).send({ status: false, message: "please enter valid available sizes" })
             
             product.save()
 
